@@ -197,16 +197,16 @@ func TestRegistry_Get(t *testing.T) {
 
 func TestRegistry_List(t *testing.T) {
 	projectDocs := []parser.Document{
-		{Name: "zebra", Description: "Z", Source: parser.SourceProjectScoped},
-		{Name: "alpha", Description: "A", Source: parser.SourceProjectScoped},
-		{Name: "middle", Description: "M", Source: parser.SourceProjectScoped},
+		{Name: "zeta", Description: "Z", Source: parser.SourceProjectScoped, FilePath: "2-zeta.md"},
+		{Name: "alpha", Description: "A", Source: parser.SourceProjectScoped, FilePath: "1-alpha.md"},
+		{Name: "middle", Description: "M", Source: parser.SourceProjectScoped, FilePath: "3-middle.md"},
 	}
 
 	registry := BuildRegistry(nil, projectDocs, &config.ProjectConfig{})
 
 	names := registry.List()
 
-	expected := []string{"alpha", "middle", "zebra"}
+	expected := []string{"alpha", "zeta", "middle"}
 	if len(names) != len(expected) {
 		t.Fatalf("expected %d names, got %d", len(expected), len(names))
 	}
@@ -220,8 +220,8 @@ func TestRegistry_List(t *testing.T) {
 
 func TestRegistry_GetAll(t *testing.T) {
 	projectDocs := []parser.Document{
-		{Name: "zebra", Description: "Z", Source: parser.SourceProjectScoped},
-		{Name: "alpha", Description: "A", Source: parser.SourceProjectScoped},
+		{Name: "zebra", Description: "Z", Source: parser.SourceProjectScoped, FilePath: "2-zebra.md"},
+		{Name: "alpha", Description: "A", Source: parser.SourceProjectScoped, FilePath: "1-alpha.md"},
 	}
 
 	registry := BuildRegistry(nil, projectDocs, &config.ProjectConfig{})
@@ -232,7 +232,7 @@ func TestRegistry_GetAll(t *testing.T) {
 		t.Fatalf("expected 2 docs, got %d", len(docs))
 	}
 
-	// Should be sorted alphabetically
+	// Should be sorted by filename
 	if docs[0].Name != "alpha" {
 		t.Errorf("expected first doc to be 'alpha', got '%s'", docs[0].Name)
 	}

@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"path/filepath"
 	"sort"
 
 	"github.com/yourusername/howto/internal/config"
@@ -46,17 +47,40 @@ func (r Registry) Get(name string) (parser.Document, bool) {
 	return doc, ok
 }
 
-// List returns all document names sorted alphabetically
+// List returns all document names sorted by their source filenames
 func (r Registry) List() []string {
-	names := make([]string, 0, len(r))
-	for name := range r {
-		names = append(names, name)
+	type entry struct {
+		name    string
+		sortKey string
 	}
-	sort.Strings(names)
+
+	entries := make([]entry, 0, len(r))
+	for name, doc := range r {
+		sortKey := filepath.Base(doc.FilePath)
+		if sortKey == "" {
+			sortKey = name
+		}
+
+		entries = append(entries, entry{
+			name:    name,
+			sortKey: sortKey,
+		})
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].sortKey == entries[j].sortKey {
+			return entries[i].name < entries[j].name
+		}
+		return entries[i].sortKey < entries[j].sortKey
+	})
+
+	names := make([]string, len(entries))
+	for i, entry := range entries {
+		names[i] = entry.name
+	}
 	return names
 }
 
-// GetAll returns all documents sorted by name
+// GetAll returns all documents sorted by filename
 func (r Registry) GetAll() []parser.Document {
 	names := r.List()
 	docs := make([]parser.Document, 0, len(names))

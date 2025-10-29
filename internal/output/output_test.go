@@ -64,11 +64,11 @@ func TestPrintHelp_Empty(t *testing.T) {
 	}
 }
 
-func TestPrintHelp_Sorted(t *testing.T) {
+func TestPrintHelp_SortedByFilename(t *testing.T) {
 	docs := []parser.Document{
-		{Name: "zebra", Description: "Z", Source: parser.SourceProjectScoped},
-		{Name: "alpha", Description: "A", Source: parser.SourceProjectScoped},
-		{Name: "middle", Description: "M", Source: parser.SourceProjectScoped},
+		{Name: "gamma", Description: "G", Source: parser.SourceProjectScoped, FilePath: "2-bravo.md"},
+		{Name: "alpha", Description: "A", Source: parser.SourceProjectScoped, FilePath: "1-alpha.md"},
+		{Name: "beta", Description: "B", Source: parser.SourceProjectScoped, FilePath: "3-charlie.md"},
 	}
 
 	reg := registry.BuildRegistry(nil, docs, &config.ProjectConfig{})
@@ -80,16 +80,16 @@ func TestPrintHelp_Sorted(t *testing.T) {
 
 	// Find positions of playbook names
 	alphaPos := strings.Index(output, "  alpha:")
-	middlePos := strings.Index(output, "  middle:")
-	zebraPos := strings.Index(output, "  zebra:")
+	gammaPos := strings.Index(output, "  gamma:")
+	betaPos := strings.Index(output, "  beta:")
 
-	if alphaPos == -1 || middlePos == -1 || zebraPos == -1 {
+	if alphaPos == -1 || gammaPos == -1 || betaPos == -1 {
 		t.Fatal("expected all playbooks to be in output")
 	}
 
-	// Check they're in alphabetical order
-	if !(alphaPos < middlePos && middlePos < zebraPos) {
-		t.Error("expected playbooks to be sorted alphabetically")
+	// Check they're sorted by filename
+	if !(alphaPos < gammaPos && gammaPos < betaPos) {
+		t.Error("expected playbooks to be sorted by filename order")
 	}
 }
 
