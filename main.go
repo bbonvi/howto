@@ -21,7 +21,7 @@ func main() {
 }
 
 func run() error {
-	// Parse command line arguments
+	// Parse playbook arguments
 	args := os.Args[1:] // Skip program name
 
 	if len(args) > 1 {
@@ -70,9 +70,9 @@ func run() error {
 		return nil
 	}
 
-	// Print specific command
-	commandName := args[0]
-	if err := output.PrintCommand(os.Stdout, reg, commandName); err != nil {
+	// Print specific playbook
+	playbookName := args[0]
+	if err := output.PrintPlaybook(os.Stdout, reg, playbookName); err != nil {
 		return err
 	}
 

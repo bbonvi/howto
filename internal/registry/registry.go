@@ -7,16 +7,17 @@ import (
 	"github.com/yourusername/howto/internal/parser"
 )
 
-// Registry maps command names to their documentation
+// Registry maps playbook names to their documentation
 type Registry map[string]parser.Document
 
-// BuildRegistry creates a unified command registry with filtering logic
+// BuildRegistry creates a unified playbook registry with filtering logic
 // Rules:
 // 1. Always include all project-scoped docs
 // 2. For global docs:
-//    - Include if required=true (default)
-//    - Include if required=false AND name is in projectConfig.Require
-//    - Exclude if required=false AND name is NOT in projectConfig.Require
+//   - Include if required=true (default)
+//   - Include if required=false AND name is in projectConfig.Require
+//   - Exclude if required=false AND name is NOT in projectConfig.Require
+//
 // 3. If name conflicts: project-scoped overrides global
 func BuildRegistry(globalDocs, projectDocs []parser.Document, projectConfig *config.ProjectConfig) Registry {
 	registry := make(Registry)

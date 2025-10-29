@@ -29,11 +29,11 @@ go install ./...
 
 ## Agent Workflow
 ```bash
-# List available instructions (agents typically do this once)
+# List available playbooks (agents typically do this once)
 howto
 
-# Pull the playbook before acting
-howto <name>
+# Pull the required playbook before acting
+howto <playbook>
 ```
 
 `howto` exits with a non-zero status if configuration is missing, a document fails to parse, or the requested entry does not exist—surface these errors to the human operator so they can fix the library.
@@ -55,13 +55,13 @@ Every Markdown file must start with YAML front matter:
 
 ```yaml
 ---
-name: optional-custom-command-name # defaults to the filename without .md
+name: optional-custom-playbook-name # defaults to the filename without .md
 description: concise explanation shown in `howto` listings (required)
 required: true # optional, only evaluated for global documents
 ---
 ```
 
-Anything after the closing delimiter is rendered verbatim when the command is selected. Missing delimiters or an empty `description` field trigger a parsing error so the problematic document never reaches an agent.
+Anything after the closing delimiter is rendered verbatim when the playbook is selected. Missing delimiters or an empty `description` field trigger a parsing error so the problematic document never reaches an agent.
 
 ## Project Configuration
 Create `.howto/config.yaml` in your project to declare additional requirements:

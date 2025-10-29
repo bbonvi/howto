@@ -10,7 +10,7 @@ import (
 	"github.com/yourusername/howto/internal/registry"
 )
 
-func TestPrintHelp_WithCommands(t *testing.T) {
+func TestPrintHelp_WithPlaybooks(t *testing.T) {
 	globalDocs := []parser.Document{
 		{Name: "rust-lang", Description: "Documentation for Rust projects", Required: true, Source: parser.SourceGlobal},
 	}
@@ -26,7 +26,7 @@ func TestPrintHelp_WithCommands(t *testing.T) {
 	output := buf.String()
 
 	// Check for expected elements
-	if !strings.Contains(output, "Usage: howto [COMMAND]") {
+	if !strings.Contains(output, "Usage: howto [PLAYBOOK]") {
 		t.Error("expected usage line in output")
 	}
 
@@ -34,20 +34,20 @@ func TestPrintHelp_WithCommands(t *testing.T) {
 		t.Error("expected overview line in output")
 	}
 
-	if !strings.Contains(output, "Run it to list commands, then fetch the one you need with `howto <command>`.") {
+	if !strings.Contains(output, "Run it to list playbooks, then fetch the one you need with `howto <playbook>`.") {
 		t.Error("expected usage hint in output")
 	}
 
-	if !strings.Contains(output, "Commands:") {
-		t.Error("expected 'Commands:' header in output")
+	if !strings.Contains(output, "Playbooks:") {
+		t.Error("expected 'Playbooks:' header in output")
 	}
 
 	if !strings.Contains(output, "- commits: Commit guidelines") {
-		t.Error("expected 'commits' command line in output")
+		t.Error("expected 'commits' playbook line in output")
 	}
 
 	if !strings.Contains(output, "- rust-lang: Documentation for Rust projects") {
-		t.Error("expected 'rust-lang' command line in output")
+		t.Error("expected 'rust-lang' playbook line in output")
 	}
 }
 
@@ -59,8 +59,8 @@ func TestPrintHelp_Empty(t *testing.T) {
 
 	output := buf.String()
 
-	if !strings.Contains(output, "No commands available.") {
-		t.Error("expected 'No commands available.' for empty registry")
+	if !strings.Contains(output, "No playbooks available.") {
+		t.Error("expected 'No playbooks available.' for empty registry")
 	}
 }
 
@@ -78,22 +78,22 @@ func TestPrintHelp_Sorted(t *testing.T) {
 
 	output := buf.String()
 
-	// Find positions of command names
+	// Find positions of playbook names
 	alphaPos := strings.Index(output, "- alpha:")
 	middlePos := strings.Index(output, "- middle:")
 	zebraPos := strings.Index(output, "- zebra:")
 
 	if alphaPos == -1 || middlePos == -1 || zebraPos == -1 {
-		t.Fatal("expected all commands to be in output")
+		t.Fatal("expected all playbooks to be in output")
 	}
 
 	// Check they're in alphabetical order
 	if !(alphaPos < middlePos && middlePos < zebraPos) {
-		t.Error("expected commands to be sorted alphabetically")
+		t.Error("expected playbooks to be sorted alphabetically")
 	}
 }
 
-func TestPrintCommand_Success(t *testing.T) {
+func TestPrintPlaybook_Success(t *testing.T) {
 	docs := []parser.Document{
 		{
 			Name:        "test-doc",
@@ -106,7 +106,7 @@ func TestPrintCommand_Success(t *testing.T) {
 	reg := registry.BuildRegistry(nil, docs, &config.ProjectConfig{})
 
 	var buf bytes.Buffer
-	err := PrintCommand(&buf, reg, "test-doc")
+	err := PrintPlaybook(&buf, reg, "test-doc")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -119,21 +119,21 @@ func TestPrintCommand_Success(t *testing.T) {
 	}
 }
 
-func TestPrintCommand_NotFound(t *testing.T) {
+func TestPrintPlaybook_NotFound(t *testing.T) {
 	reg := registry.BuildRegistry(nil, nil, &config.ProjectConfig{})
 
 	var buf bytes.Buffer
-	err := PrintCommand(&buf, reg, "nonexistent")
+	err := PrintPlaybook(&buf, reg, "nonexistent")
 	if err == nil {
-		t.Fatal("expected error for nonexistent command")
+		t.Fatal("expected error for nonexistent playbook")
 	}
 
-	if !strings.Contains(err.Error(), "unknown command") {
-		t.Errorf("expected 'unknown command' error, got: %v", err)
+	if !strings.Contains(err.Error(), "unknown playbook") {
+		t.Errorf("expected 'unknown playbook' error, got: %v", err)
 	}
 }
 
-func TestPrintCommand_OnlyContent(t *testing.T) {
+func TestPrintPlaybook_OnlyContent(t *testing.T) {
 	// Ensure frontmatter is not included in output
 	docs := []parser.Document{
 		{
@@ -147,7 +147,7 @@ func TestPrintCommand_OnlyContent(t *testing.T) {
 	reg := registry.BuildRegistry(nil, docs, &config.ProjectConfig{})
 
 	var buf bytes.Buffer
-	err := PrintCommand(&buf, reg, "doc")
+	err := PrintPlaybook(&buf, reg, "doc")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -155,11 +155,11 @@ func TestPrintCommand_OnlyContent(t *testing.T) {
 	output := buf.String()
 
 	if strings.Contains(output, "This should not appear in output") {
-		t.Error("description should not be in command output")
+		t.Error("description should not be in playbook output")
 	}
 
 	if !strings.Contains(output, "Only this content should appear") {
-		t.Error("expected content to be in command output")
+		t.Error("expected content to be in playbook output")
 	}
 }
 
@@ -201,7 +201,7 @@ func TestOneLineDescription(t *testing.T) {
 	}
 }
 
-func TestPrintHelp_CommandListing(t *testing.T) {
+func TestPrintHelp_PlaybookListing(t *testing.T) {
 	docs := []parser.Document{
 		{Name: "test", Description: "Test description", Source: parser.SourceProjectScoped},
 	}
@@ -215,6 +215,6 @@ func TestPrintHelp_CommandListing(t *testing.T) {
 
 	expectedLine := "- test: Test description"
 	if !strings.Contains(output, expectedLine) {
-		t.Errorf("expected command listing %q in output, got:\n%s", expectedLine, output)
+		t.Errorf("expected playbook listing %q in output, got:\n%s", expectedLine, output)
 	}
 }

@@ -39,44 +39,44 @@ func TestIntegration_FullWorkflow(t *testing.T) {
 	// Build registry
 	reg := registry.BuildRegistry(globalDocs, projectDocs, projectConfig)
 
-	// Test 1: Registry should contain expected commands
-	expectedCommands := []string{"rust-lang", "go-lang", "commits", "optional-rule"}
-	for _, cmd := range expectedCommands {
-		if !reg.Has(cmd) {
-			t.Errorf("expected command '%s' to be in registry", cmd)
+	// Test 1: Registry should contain expected playbooks
+	expectedPlaybooks := []string{"rust-lang", "go-lang", "commits", "optional-rule"}
+	for _, pb := range expectedPlaybooks {
+		if !reg.Has(pb) {
+			t.Errorf("expected playbook '%s' to be in registry", pb)
 		}
 	}
 
-	// Test 2: Help output should list all commands
+	// Test 2: Help output should list all playbooks
 	var helpBuf bytes.Buffer
 	output.PrintHelp(&helpBuf, reg)
 	helpOutput := helpBuf.String()
 
-	if !strings.Contains(helpOutput, "rust-lang:") {
+	if !strings.Contains(helpOutput, "- rust-lang:") {
 		t.Error("expected rust-lang in help output")
 	}
-	if !strings.Contains(helpOutput, "commits:") {
+	if !strings.Contains(helpOutput, "- commits:") {
 		t.Error("expected commits in help output")
 	}
-	if !strings.Contains(helpOutput, "optional-rule:") {
-		t.Error("expected optional-rule in help output (it's in project config)")
+	if !strings.Contains(helpOutput, "- optional-rule:") {
+		t.Error("expected optional-rule in help output (it's required by project config)")
 	}
 
-	// Test 3: Command output should show content only
+	// Test 3: Playbook output should show content only
 	var cmdBuf bytes.Buffer
-	if err := output.PrintCommand(&cmdBuf, reg, "rust-lang"); err != nil {
-		t.Fatalf("failed to print rust-lang command: %v", err)
+	if err := output.PrintPlaybook(&cmdBuf, reg, "rust-lang"); err != nil {
+		t.Fatalf("failed to print rust-lang playbook: %v", err)
 	}
 
 	cmdOutput := cmdBuf.String()
 	if !strings.Contains(cmdOutput, "# Rust Design Principles") {
-		t.Error("expected Rust content in command output")
+		t.Error("expected Rust content in playbook output")
 	}
 	if strings.Contains(cmdOutput, "---") {
-		t.Error("did not expect YAML frontmatter in command output")
+		t.Error("did not expect YAML frontmatter in playbook output")
 	}
 
-	// Test 4: Project-scoped commands should be present
+	// Test 4: Project-scoped playbooks should be present
 	doc, ok := reg.Get("commits")
 	if !ok {
 		t.Fatal("expected commits doc to exist")
@@ -120,17 +120,17 @@ func TestIntegration_WithoutProjectConfig(t *testing.T) {
 	}
 }
 
-func TestIntegration_UnknownCommand(t *testing.T) {
+func TestIntegration_UnknownPlaybook(t *testing.T) {
 	reg := registry.BuildRegistry(nil, nil, &config.ProjectConfig{})
 
 	var buf bytes.Buffer
-	err := output.PrintCommand(&buf, reg, "nonexistent")
+	err := output.PrintPlaybook(&buf, reg, "nonexistent")
 	if err == nil {
-		t.Fatal("expected error for unknown command")
+		t.Fatal("expected error for unknown playbook")
 	}
 
-	if !strings.Contains(err.Error(), "unknown command") {
-		t.Errorf("expected 'unknown command' error, got: %v", err)
+	if !strings.Contains(err.Error(), "unknown playbook") {
+		t.Errorf("expected 'unknown playbook' error, got: %v", err)
 	}
 }
 
