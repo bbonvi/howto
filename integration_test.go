@@ -52,13 +52,13 @@ func TestIntegration_FullWorkflow(t *testing.T) {
 	output.PrintHelp(&helpBuf, reg)
 	helpOutput := helpBuf.String()
 
-	if !strings.Contains(helpOutput, "- rust-lang:") {
+	if !strings.Contains(helpOutput, "  rust-lang:") {
 		t.Error("expected rust-lang in help output")
 	}
-	if !strings.Contains(helpOutput, "- commits:") {
+	if !strings.Contains(helpOutput, "  commits:") {
 		t.Error("expected commits in help output")
 	}
-	if !strings.Contains(helpOutput, "- optional-rule:") {
+	if !strings.Contains(helpOutput, "  optional-rule:") {
 		t.Error("expected optional-rule in help output (it's required by project config)")
 	}
 

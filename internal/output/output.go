@@ -35,7 +35,7 @@ func PrintHelp(w io.Writer, reg registry.Registry) {
 	fmt.Fprintln(w, "Playbooks:")
 	for _, doc := range docs {
 		description := oneLineDescription(doc.Description)
-		fmt.Fprintf(w, "- %s: %s\n", doc.Name, description)
+		fmt.Fprintf(w, "  %s: %s\n", doc.Name, description)
 	}
 }
 

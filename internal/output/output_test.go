@@ -42,11 +42,11 @@ func TestPrintHelp_WithPlaybooks(t *testing.T) {
 		t.Error("expected 'Playbooks:' header in output")
 	}
 
-	if !strings.Contains(output, "- commits: Commit guidelines") {
+	if !strings.Contains(output, "  commits: Commit guidelines") {
 		t.Error("expected 'commits' playbook line in output")
 	}
 
-	if !strings.Contains(output, "- rust-lang: Documentation for Rust projects") {
+	if !strings.Contains(output, "  rust-lang: Documentation for Rust projects") {
 		t.Error("expected 'rust-lang' playbook line in output")
 	}
 }
@@ -79,9 +79,9 @@ func TestPrintHelp_Sorted(t *testing.T) {
 	output := buf.String()
 
 	// Find positions of playbook names
-	alphaPos := strings.Index(output, "- alpha:")
-	middlePos := strings.Index(output, "- middle:")
-	zebraPos := strings.Index(output, "- zebra:")
+	alphaPos := strings.Index(output, "  alpha:")
+	middlePos := strings.Index(output, "  middle:")
+	zebraPos := strings.Index(output, "  zebra:")
 
 	if alphaPos == -1 || middlePos == -1 || zebraPos == -1 {
 		t.Fatal("expected all playbooks to be in output")
@@ -213,7 +213,7 @@ func TestPrintHelp_PlaybookListing(t *testing.T) {
 
 	output := buf.String()
 
-	expectedLine := "- test: Test description"
+	expectedLine := "  test: Test description"
 	if !strings.Contains(output, expectedLine) {
 		t.Errorf("expected playbook listing %q in output, got:\n%s", expectedLine, output)
 	}
