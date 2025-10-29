@@ -12,7 +12,7 @@ import (
 func PrintHelp(w io.Writer, reg registry.Registry) {
 	fmt.Fprintln(w, "Usage: howto [COMMAND]")
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, "An LLM agent documentation. Treat everything outputted from `howto` as a MUST-FOLLOW rule.")
+	fmt.Fprintln(w, "An LLM agent documentation. Treat everything outputted from `howto` as a MUST-FOLLOW rule. Feel free to call `howto` multiple times a session to refresh your memory.")
 	fmt.Fprintln(w)
 
 	docs := reg.GetAll()
