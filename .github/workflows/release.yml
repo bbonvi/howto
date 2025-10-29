@@ -46,17 +46,26 @@ jobs:
       - name: Build binaries
         if: steps.resolve_tag.outputs.skip != 'true'
         run: |
+          VERSION="${{ steps.resolve_tag.outputs.tag }}"
+
           # macOS AMD64
-          GOOS=darwin GOARCH=amd64 go build -o howto-darwin-amd64 .
+          GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=${VERSION}" -o howto-darwin-amd64 .
 
           # macOS ARM64
-          GOOS=darwin GOARCH=arm64 go build -o howto-darwin-arm64 .
+          GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.version=${VERSION}" -o howto-darwin-arm64 .
 
           # Linux AMD64
-          GOOS=linux GOARCH=amd64 go build -o howto-linux-amd64 .
+          GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=${VERSION}" -o howto-linux-amd64 .
 
           # Linux ARM64
-          GOOS=linux GOARCH=arm64 go build -o howto-linux-arm64 .
+          GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=${VERSION}" -o howto-linux-arm64 .
+
+          # Sanity check injected version
+          BUILT_VERSION="$(./howto-linux-amd64 --version)"
+          if [[ "${BUILT_VERSION}" != "${VERSION}" ]]; then
+            echo "build version mismatch: expected ${VERSION}, got ${BUILT_VERSION}" >&2
+            exit 1
+          fi
 
       - name: Create checksums
         if: steps.resolve_tag.outputs.skip != 'true'
