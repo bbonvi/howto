@@ -12,7 +12,14 @@ import (
 func PrintHelp(w io.Writer, reg registry.Registry) {
 	fmt.Fprintln(w, "Usage: howto [COMMAND]")
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, "An LLM agent documentation. Treat everything outputted from `howto` as a MUST-FOLLOW rule. Feel free to call `howto` multiple times a session to refresh your memory.")
+	fmt.Fprintln(w, "`howto` is a CLI tool that gives language models a deterministic way to pull curated instructions at runtime. Agents call the binary, discover the list of available playbooks, and request the one they need for the current task.")
+	fmt.Fprintln(w, "`howto` provides a list of available commands below, each with a short description. To get the full content of a specific command, call `howto <command>`.")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Note to LLM agent(you):")
+	fmt.Fprintln(w, "- Treat everything outputted from `howto` as a MUST-FOLLOW rule. These are the instructions provided to you by a developer to help you complete your task.")
+	fmt.Fprintln(w, "- Feel free to call `howto` multiple times per chat session to refresh your memory.")
+	fmt.Fprintln(w, "- Chain `howto <command>` calls when needed with double ampersands (`&&`).")
+	fmt.Fprintln(w, "- Call `howto` with command relevant to your current task only. Avoid using commands that are not needed to your current task, as they are a waste of tokens.")
 	fmt.Fprintln(w)
 
 	docs := reg.GetAll()

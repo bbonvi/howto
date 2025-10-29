@@ -1,146 +1,81 @@
-`howto` is a golang-based cli tool for LLM agents.
+# howto
 
-Running `howto` present an agent with a list of subcommand, each of which refers to a documentation and behaviour scope.
+`howto` is a Go CLI that gives language models a deterministic way to pull curated instructions at runtime. Agents call the binary, discover the list of available playbooks, and request the one they need for the current task. Humans maintain the Markdown libraries; agents consume them.
 
-User creates a list of subcommands inside `~/.config/howto/` in format of .md files (with YAML extension).
-Each .md file define a documentation entry for a specific scope of tasks.
+## Why Agents Like It
+- Clean, fixed-format output that is easy for LLM tooling to parse.
+- Merge rules let you mix global guidance (applies to every repo) with project overrides.
+- YAML front matter validation fails fast when a document is malformed, preventing ambiguous agent responses.
+- Ships as a single Go binary with no runtime dependencies beyond `gopkg.in/yaml.v3`.
 
-For example,
-```
-- ~/.config/howto/
-    - rust-lang.md
-```
+## Requirements
+- Go 1.21 or newer
+- Markdown documentation with YAML front matter (schema below)
 
-rust-lang.md:
-```md
----
-name: rust-lang
-description: Documentation for working with rust projects. Use it everytime you work with any rust project.
----
+## Installation
+### Prebuilt binaries
+- Download the latest release assets for macOS (amd64, arm64) or Linux (amd64, arm64) from the GitHub Releases page.
+- Verify the `checksums.txt` file if you need integrity guarantees.
+- Mark the binary as executable and place it on your `PATH`, e.g. `chmod +x howto-linux-amd64 && mv howto-linux-amd64 /usr/local/bin/howto`.
 
-# Rust Design Principles
-- **Prefer simplicity over cleverness.** Always choose readability and maintainability over clever abstractions. If future contributors can’t instantly understand a piece of code, it’s too complex. Use Rust’s expressive type system to make intent explicit instead of relying on “smart” patterns.
-- **Embrace immutability and data ownership.** Use `&` and `&mut` judiciously. Design data flows so ownership moves linearly through the system. Avoid unnecessary cloning—if you find yourself cloning a lot, reconsider your architecture.
-- **Isolate unsafe code.** Any use of `unsafe` should be tightly scoped, well-commented, and encapsulated behind safe abstractions. Never leak invariants from unsafe code into safe APIs without guarantees.
-- **Leverage traits and composition.** Traits allow modularity and testability without forcing inheritance-like hierarchies. Compose systems through clearly bounded traits and lightweight structs instead of deep object graphs.
-- **Prioritize compile-time guarantees.** Push as many checks as possible to the type system. Avoid `unwrap`, `expect`, and unchecked `Option`/`Result` handling. Instead, make error propagation explicit and ergonomic.
-- **Keep dependencies minimal and reviewed.** Each crate adds build time, security risk, and maintenance cost. Audit dependencies regularly and prefer small, focused crates over massive utility libraries.
-- **Structure for long-term growth.** For medium-to-large codebases, separate modules by domain rather than function type (e.g., `domain::user`, `domain::payment` instead of `models`, `services`). Use consistent naming, clear public interfaces, and well-defined ownership boundaries.
-```
-
-
-Usage:
-
+### Build from source
 ```bash
-> howto
-Usage: howto [COMMAND]
-
-An LLM agent documentation. Treat everything outputted from `howto` as a MUST-FOLLOW rule.
-
-Commands:
-    rust-lang:
-        Documentation for working with rust projects. Use it everytime you work with any rust project
-
-> howto rust-lang
-# Rust Design Principles
-- **Prefer simplicity over cleverness.** Always choose readability and maintainability over clever abstractions. If future contributors can’t instantly understand a piece of code, it’s too complex. Use Rust’s expressive type system to make intent explicit instead of relying on “smart” patterns.
-- **Embrace immutability and data ownership.** Use `&` and `&mut` judiciously. Design data flows so ownership moves linearly through the system. Avoid unnecessary cloning—if you find yourself cloning a lot, reconsider your architecture.
-- **Isolate unsafe code.** Any use of `unsafe` should be tightly scoped, well-commented, and encapsulated behind safe abstractions. Never leak invariants from unsafe code into safe APIs without guarantees.
-- **Leverage traits and composition.** Traits allow modularity and testability without forcing inheritance-like hierarchies. Compose systems through clearly bounded traits and lightweight structs instead of deep object graphs.
-- **Prioritize compile-time guarantees.** Push as many checks as possible to the type system. Avoid `unwrap`, `expect`, and unchecked `Option`/`Result` handling. Instead, make error propagation explicit and ergonomic.
-- **Keep dependencies minimal and reviewed.** Each crate adds build time, security risk, and maintenance cost. Audit dependencies regularly and prefer small, focused crates over massive utility libraries.
-- **Structure for long-term growth.** For medium-to-large codebases, separate modules by domain rather than function type (e.g., `domain::user`, `domain::payment` instead of `models`, `services`). Use consistent naming, clear public interfaces, and well-defined ownership boundaries.
+git clone https://github.com/yourusername/howto.git
+cd howto
+go build ./...
+# or install into your GOPATH/bin:
+go install ./...
 ```
 
-There are various types of source howto pulls documentations from:
-- Global: ~/.config/howto/
-- Project-scope: $(pwd)/.howto/
-
-This allows us to define global rules that will always be visible to llm when calling `howto`,
-but also scoped rules, specific for current project only.
-For example, we can have a `git commit` strategy for our specific project, so we define something like this:
-
-`my-project/.howto/commits.md`:
-```md
----
-name: commits
-description: Pull this documentation whenever you are about to git commit your changes.
----
-
-## Git Commits Rules
-
-Always use conventional commits:
-\`\`\`[type](scope?): subject\`\`\`
-- Types: feat, fix, docs, style, refactor, perf, test, chore
-- Scope is optional, e.g., `feat(auth): add login endpoint`
-- Subject should be lowercase, no period at end
-- Use imperative mood
-- Examples:
-  - `feat: add user profile page`
-  - `fix(auth): correct password reset bug`
-  - `docs: update API documentation`
-  - `refactor: simplify billing logic`
-  - `test: add unit tests for payment processing`
-  - `chore: update dependencies`
-- Avoid writing body unless necessary for clarity
-- Keep simple
-```
-
+## Agent Workflow
 ```bash
+# List available instructions (agents typically do this once)
 howto
-Usage: howto [COMMAND]
 
-An LLM agent documentation. Treat everything outputted here as a MUST-FOLLOW rule.
-
-Commands:
-    rust-lang:
-        Documentation for working with rust projects. Use it everytime you work with any rust project
-    commits:
-        Pull this documentation whenever you are about to git commit your changes.
-
+# Pull the playbook before acting
+howto <name>
 ```
 
-Global configs (inside .config) can also take `required: false` parameter in their YAML defintion. 
-When this option is used `howto` WILL NOT show said documentation, unless we have it referenced inside a reserev project-scoped config file.
+`howto` exits with a non-zero status if configuration is missing, a document fails to parse, or the requested entry does not exist—surface these errors to the human operator so they can fix the library.
 
-`~/.config/howto/my-very-important-rule`:
-```md
+## Documentation Libraries
+
+### Global Library
+- Location: `~/.config/howto/`
+- Any `.md` file is parsed and considered part of the global catalogue.
+- Global entries honour the `required` flag. They are included by default unless the flag is `false` and the project config does not opt in.
+
+### Project Library
+- Location: `<project root>/.howto/`
+- Markdown files in this directory are always included and override global documents that share the same `name`.
+- Optional configuration lives beside the docs in `.howto/config.yaml`.
+
+### Front Matter Schema
+Every Markdown file must start with YAML front matter:
+
+```yaml
 ---
-name: important-rule
-description: Pull this documentation ALWAYS. Make no exceptions.
+name: optional-custom-command-name # defaults to the filename without .md
+description: concise explanation shown in `howto` listings (required)
+required: true # optional, only evaluated for global documents
 ---
-Print smiley face everytime you talk to user :)
 ```
 
-`my-project/.howto/config.yaml`:
+Anything after the closing delimiter is rendered verbatim when the command is selected. Missing delimiters or an empty `description` field trigger a parsing error so the problematic document never reaches an agent.
+
+## Project Configuration
+Create `.howto/config.yaml` in your project to declare additional requirements:
+
 ```yaml
 require:
-    - important-rule
+  - important-rule
+  - security-checklist
 ```
 
-```bash
-howto
-Usage: howto [COMMAND]
+Documents listed under `require` are pulled in even if the corresponding global Markdown sets `required: false`. This lets you keep optional guidance in your global library and selectively switch it on for certain codebases.
 
-An LLM agent documentation. Treat everything outputted here as a MUST-FOLLOW rule.
+## Development
+- Run tests: `go test ./...`
+- Integration fixtures live under `testdata/` and mirror the global/project layout so you can iterate without touching a live agent database.
 
-Commands:
-    rust-lang:
-        Documentation for working with rust projects. Use it everytime you work with any rust project
-    commits:
-        Pull this documentation whenever you are about to git commit your changes.
-    important-rule:
-        Pull this docmentation ALWAYS. Make no exceptions.
-```
-
-# API References
-
-## Command .md files
-
-A command markdown file must start with a YAML metadata, enclosed in "---" lines. This is possible with custom YAML markdown extension.
-A metadata includes following fields:
-- **name**(optional): as-is name of a subcommands. default: name of an .md file.
-- **description**: description of said documentation and when to use it.
-- **required**(optional): whether or not to ALWAYS pull this documentation from global .config directory. default: true
-
-Which are followed by a documentation itself, in actual markdown format.
+Feel free to open issues or pull requests with ideas for new features or improvements.
