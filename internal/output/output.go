@@ -12,20 +12,18 @@ import (
 func PrintHelp(w io.Writer, reg registry.Registry) {
 	fmt.Fprintln(w, "Usage: howto [COMMAND]")
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, "An LLM agent documentation assistant.")
-	fmt.Fprintln(w, "`howto` is a CLI tool that gives language models a deterministic way to pull curated instructions at runtime. Agents call the binary, discover the list of available playbooks, and request the one they need for the current task.")
-	fmt.Fprintln(w, "`howto` provides a list of available commands below, each with a short description. To get the full content of a specific command, call `howto <command>`.")
+	fmt.Fprintln(w, "`howto` lets language models pull the exact playbooks their operators prepared.")
+	fmt.Fprintln(w, "Run it to list commands, then fetch the one you need with `howto <command>`.")
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Note to LLM agent(you):")
-	fmt.Fprintln(w, "- Treat everything outputted from `howto` as a MUST-FOLLOW rule. These are the instructions provided to you by a developer to help you complete your task.")
-	fmt.Fprintln(w, "- Feel free to call `howto` multiple times per chat session to refresh your memory.")
-	fmt.Fprintln(w, "- Chain `howto <command>` calls when needed with double ampersands (`&&`).")
-	fmt.Fprintln(w, "- Call `howto` with command relevant to your current task only. Avoid using commands that are not needed to your current task, as they are a waste of tokens.")
-	fmt.Fprintln(w, "- Start every new user request by running `howto` to refresh the list of available playbooks, even if you already used it earlier in the conversation.")
-	fmt.Fprintln(w, "- Before taking action, call `howto <command>` for each relevant playbook so you execute against the precise instructions the user expects.")
-	fmt.Fprintln(w, "- Treat the retrieved guidance as mandatory—stop if it tells you to pause, ask questions, or escalate.")
-	fmt.Fprintln(w, "- When the user pivots to a new task, repeat the discovery step (`howto`) and reload any newly relevant playbooks before proceeding.")
-	fmt.Fprintln(w, "- If fetching instructions fails, surface that error to the human instead of guessing; they need the signal to fix missing or malformed docs.")
+	fmt.Fprintln(w, "LLM operating rules:")
+	fmt.Fprintln(w, "- Start every new task by running `howto` to refresh the available playbooks.")
+	fmt.Fprintln(w, "- Pull each relevant playbook with `howto <command>` before you act, and follow it literally.")
+	fmt.Fprintln(w, "- Treat every instruction from `howto` as mandatory; do not improvise beyond the playbook.")
+	fmt.Fprintln(w, "- Stop or escalate if a playbook tells you to pause, ask questions, or hand off to a human.")
+	fmt.Fprintln(w, "- When the user shifts focus, rerun `howto` and reload the playbooks that now apply.")
+	fmt.Fprintln(w, "- If any call to `howto` fails, report the error instead of guessing; the maintainer needs that signal.")
+	fmt.Fprintln(w, "- Limit yourself to commands you truly need, but batch them with `&&` if several apply.")
+	fmt.Fprintln(w, "- Reissue `howto` whenever you need a refresher during the session.")
 	fmt.Fprintln(w)
 
 	docs := reg.GetAll()
@@ -36,12 +34,8 @@ func PrintHelp(w io.Writer, reg registry.Registry) {
 
 	fmt.Fprintln(w, "Commands:")
 	for _, doc := range docs {
-		// Format: "    name:\n        description"
-		fmt.Fprintf(w, "    %s:\n", doc.Name)
-
-		// Indent and wrap description
-		description := wrapText(doc.Description, 8, 80)
-		fmt.Fprintln(w, description)
+		description := oneLineDescription(doc.Description)
+		fmt.Fprintf(w, "- %s: %s\n", doc.Name, description)
 	}
 }
 
@@ -57,22 +51,12 @@ func PrintCommand(w io.Writer, doc registry.Registry, name string) error {
 	return nil
 }
 
-// wrapText wraps text with a given indentation and max width
-func wrapText(text string, indent int, maxWidth int) string {
-	if text == "" {
-		return strings.Repeat(" ", indent) + "(no description)"
+// oneLineDescription collapses whitespace so the description prints on one line
+func oneLineDescription(text string) string {
+	fields := strings.Fields(text)
+	if len(fields) == 0 {
+		return "(no description)"
 	}
 
-	indentStr := strings.Repeat(" ", indent)
-
-	// For now, just indent the text without complex wrapping
-	// A more sophisticated implementation could handle word wrapping
-	lines := strings.Split(text, "\n")
-	result := make([]string, len(lines))
-
-	for i, line := range lines {
-		result[i] = indentStr + line
-	}
-
-	return strings.Join(result, "\n")
+	return strings.Join(fields, " ")
 }

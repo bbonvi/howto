@@ -30,28 +30,24 @@ func TestPrintHelp_WithCommands(t *testing.T) {
 		t.Error("expected usage line in output")
 	}
 
-	if !strings.Contains(output, "An LLM agent documentation") {
-		t.Error("expected description line in output")
+	if !strings.Contains(output, "`howto` lets language models pull the exact playbooks their operators prepared.") {
+		t.Error("expected overview line in output")
+	}
+
+	if !strings.Contains(output, "Run it to list commands, then fetch the one you need with `howto <command>`.") {
+		t.Error("expected usage hint in output")
 	}
 
 	if !strings.Contains(output, "Commands:") {
 		t.Error("expected 'Commands:' header in output")
 	}
 
-	if !strings.Contains(output, "commits:") {
-		t.Error("expected 'commits:' command in output")
+	if !strings.Contains(output, "- commits: Commit guidelines") {
+		t.Error("expected 'commits' command line in output")
 	}
 
-	if !strings.Contains(output, "rust-lang:") {
-		t.Error("expected 'rust-lang:' command in output")
-	}
-
-	if !strings.Contains(output, "Documentation for Rust projects") {
-		t.Error("expected rust-lang description in output")
-	}
-
-	if !strings.Contains(output, "Commit guidelines") {
-		t.Error("expected commits description in output")
+	if !strings.Contains(output, "- rust-lang: Documentation for Rust projects") {
+		t.Error("expected 'rust-lang' command line in output")
 	}
 }
 
@@ -83,9 +79,9 @@ func TestPrintHelp_Sorted(t *testing.T) {
 	output := buf.String()
 
 	// Find positions of command names
-	alphaPos := strings.Index(output, "alpha:")
-	middlePos := strings.Index(output, "middle:")
-	zebraPos := strings.Index(output, "zebra:")
+	alphaPos := strings.Index(output, "- alpha:")
+	middlePos := strings.Index(output, "- middle:")
+	zebraPos := strings.Index(output, "- zebra:")
 
 	if alphaPos == -1 || middlePos == -1 || zebraPos == -1 {
 		t.Fatal("expected all commands to be in output")
@@ -167,44 +163,45 @@ func TestPrintCommand_OnlyContent(t *testing.T) {
 	}
 }
 
-func TestWrapText(t *testing.T) {
+func TestOneLineDescription(t *testing.T) {
 	tests := []struct {
 		name     string
 		text     string
-		indent   int
 		expected string
 	}{
 		{
 			name:     "simple text",
 			text:     "Hello world",
-			indent:   4,
-			expected: "    Hello world",
+			expected: "Hello world",
 		},
 		{
 			name:     "empty text",
 			text:     "",
-			indent:   4,
-			expected: "    (no description)",
+			expected: "(no description)",
 		},
 		{
 			name:     "multiline text",
-			text:     "Line 1\nLine 2",
-			indent:   2,
-			expected: "  Line 1\n  Line 2",
+			text:     "Line 1\nLine 2\tLine 3",
+			expected: "Line 1 Line 2 Line 3",
+		},
+		{
+			name:     "excess whitespace",
+			text:     "   spaced   out   ",
+			expected: "spaced out",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := wrapText(tt.text, tt.indent, 80)
+			result := oneLineDescription(tt.text)
 			if result != tt.expected {
-				t.Errorf("expected:\n%s\ngot:\n%s", tt.expected, result)
+				t.Errorf("expected %q, got %q", tt.expected, result)
 			}
 		})
 	}
 }
 
-func TestPrintHelp_Indentation(t *testing.T) {
+func TestPrintHelp_CommandListing(t *testing.T) {
 	docs := []parser.Document{
 		{Name: "test", Description: "Test description", Source: parser.SourceProjectScoped},
 	}
@@ -216,13 +213,8 @@ func TestPrintHelp_Indentation(t *testing.T) {
 
 	output := buf.String()
 
-	// Command name should be indented with 4 spaces
-	if !strings.Contains(output, "    test:") {
-		t.Error("expected command name to be indented with 4 spaces")
-	}
-
-	// Description should be indented with 8 spaces
-	if !strings.Contains(output, "        Test description") {
-		t.Error("expected description to be indented with 8 spaces")
+	expectedLine := "- test: Test description"
+	if !strings.Contains(output, expectedLine) {
+		t.Errorf("expected command listing %q in output, got:\n%s", expectedLine, output)
 	}
 }
