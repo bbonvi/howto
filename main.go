@@ -11,6 +11,8 @@ import (
 	"github.com/yourusername/howto/internal/registry"
 )
 
+var version = "dev"
+
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -19,6 +21,18 @@ func main() {
 }
 
 func run() error {
+	// Parse command line arguments
+	args := os.Args[1:] // Skip program name
+
+	if len(args) > 1 {
+		return fmt.Errorf("too many arguments (expected 0 or 1, got %d)", len(args))
+	}
+
+	if len(args) == 1 && args[0] == "--version" {
+		fmt.Fprintln(os.Stdout, version)
+		return nil
+	}
+
 	// Resolve paths
 	globalPath, err := getGlobalConfigPath()
 	if err != nil {
@@ -50,17 +64,10 @@ func run() error {
 	// Build registry
 	reg := registry.BuildRegistry(globalDocs, projectDocs, projectConfig)
 
-	// Parse command line arguments
-	args := os.Args[1:] // Skip program name
-
 	if len(args) == 0 {
 		// No arguments - print help
 		output.PrintHelp(os.Stdout, reg)
 		return nil
-	}
-
-	if len(args) > 1 {
-		return fmt.Errorf("too many arguments (expected 0 or 1, got %d)", len(args))
 	}
 
 	// Print specific command

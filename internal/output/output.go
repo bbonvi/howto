@@ -12,6 +12,7 @@ import (
 func PrintHelp(w io.Writer, reg registry.Registry) {
 	fmt.Fprintln(w, "Usage: howto [COMMAND]")
 	fmt.Fprintln(w)
+	fmt.Fprintln(w, "An LLM agent documentation assistant.")
 	fmt.Fprintln(w, "`howto` is a CLI tool that gives language models a deterministic way to pull curated instructions at runtime. Agents call the binary, discover the list of available playbooks, and request the one they need for the current task.")
 	fmt.Fprintln(w, "`howto` provides a list of available commands below, each with a short description. To get the full content of a specific command, call `howto <command>`.")
 	fmt.Fprintln(w)

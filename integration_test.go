@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -172,5 +173,42 @@ func TestGetProjectPath(t *testing.T) {
 	expected := filepath.Join(cwd, ".howto")
 	if path != expected {
 		t.Errorf("expected path '%s', got '%s'", expected, path)
+	}
+}
+
+func TestRunVersion(t *testing.T) {
+	originalArgs := os.Args
+	defer func() { os.Args = originalArgs }()
+
+	os.Args = []string{"howto", "--version"}
+
+	originalVersion := version
+	version = "v1.2.3"
+	defer func() { version = originalVersion }()
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("failed to create pipe: %v", err)
+	}
+
+	originalStdout := os.Stdout
+	defer func() { os.Stdout = originalStdout }()
+	os.Stdout = w
+
+	if err := run(); err != nil {
+		t.Fatalf("expected no error when printing version, got: %v", err)
+	}
+
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close write end of pipe: %v", err)
+	}
+
+	outputBytes, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatalf("failed to read version output: %v", err)
+	}
+
+	if string(outputBytes) != "v1.2.3\n" {
+		t.Fatalf("expected version output 'v1.2.3', got %q", string(outputBytes))
 	}
 }
