@@ -21,6 +21,11 @@ func PrintHelp(w io.Writer, reg registry.Registry) {
 	fmt.Fprintln(w, "- Feel free to call `howto` multiple times per chat session to refresh your memory.")
 	fmt.Fprintln(w, "- Chain `howto <command>` calls when needed with double ampersands (`&&`).")
 	fmt.Fprintln(w, "- Call `howto` with command relevant to your current task only. Avoid using commands that are not needed to your current task, as they are a waste of tokens.")
+	fmt.Fprintln(w, "- Start every new user request by running `howto` to refresh the list of available playbooks, even if you already used it earlier in the conversation.")
+	fmt.Fprintln(w, "- Before taking action, call `howto <command>` for each relevant playbook so you execute against the precise instructions the user expects.")
+	fmt.Fprintln(w, "- Treat the retrieved guidance as mandatory—stop if it tells you to pause, ask questions, or escalate.")
+	fmt.Fprintln(w, "- When the user pivots to a new task, repeat the discovery step (`howto`) and reload any newly relevant playbooks before proceeding.")
+	fmt.Fprintln(w, "- If fetching instructions fails, surface that error to the human instead of guessing; they need the signal to fix missing or malformed docs.")
 	fmt.Fprintln(w)
 
 	docs := reg.GetAll()
