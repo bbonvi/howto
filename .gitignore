@@ -1,5 +1,6 @@
 # Binaries
 howto
+.gocache
 *.exe
 *.dll
 *.so
