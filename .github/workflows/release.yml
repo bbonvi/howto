@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -15,17 +17,34 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine release tag
+        id: resolve_tag
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="$(git tag --points-at HEAD | grep '^v' | head -n 1 || true)"
+          fi
+
+          if [[ -z "${TAG}" ]]; then
+            echo "No release tag found for this push. Skipping release workflow."
+            echo "skip=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "skip=false" >> "${GITHUB_OUTPUT}"
+            echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+          fi
 
       - name: Set up Go
+        if: steps.resolve_tag.outputs.skip != 'true'
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
 
-      - name: Get version from tag
-        id: tag_name
-        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
       - name: Build binaries
+        if: steps.resolve_tag.outputs.skip != 'true'
         run: |
           # macOS AMD64
           GOOS=darwin GOARCH=amd64 go build -o howto-darwin-amd64 .
@@ -40,12 +59,16 @@ jobs:
           GOOS=linux GOARCH=arm64 go build -o howto-linux-arm64 .
 
       - name: Create checksums
+        if: steps.resolve_tag.outputs.skip != 'true'
         run: |
           sha256sum howto-* > checksums.txt
 
       - name: Create Release
+        if: steps.resolve_tag.outputs.skip != 'true'
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ steps.resolve_tag.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           files: |
             howto-darwin-amd64
             howto-darwin-arm64
