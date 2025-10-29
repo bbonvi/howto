@@ -1,0 +1,20 @@
+# Binaries
+howto
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Editor directories
+.vim
+.vscode
+.idea
+
+# OS files
+.DS_Store
