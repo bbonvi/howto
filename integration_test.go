@@ -2,14 +2,18 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/yourusername/howto/internal/app"
 	"github.com/yourusername/howto/internal/config"
 	"github.com/yourusername/howto/internal/loader"
+	"github.com/yourusername/howto/internal/mcp"
 	"github.com/yourusername/howto/internal/output"
 	"github.com/yourusername/howto/internal/registry"
 )
@@ -134,14 +138,51 @@ func TestIntegration_UnknownPlaybook(t *testing.T) {
 	}
 }
 
-func TestGetGlobalConfigPath(t *testing.T) {
+func TestIntegration_MCPServer(t *testing.T) {
+	globalPath := filepath.Join("testdata", ".config", "howto")
+	projectPath := filepath.Join("testdata", "project", ".howto")
+
+	loader := app.NewCachedRegistryLoader(globalPath, projectPath)
+
+	input := strings.Join([]string{
+		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"clientInfo":{"name":"integration-test"}}}`,
+		`{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}`,
+		`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list_playbooks","arguments":{}}}`,
+		`{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"get_playbook","arguments":{"name":"rust-lang"}}}`,
+	}, "\n")
+
+	var output bytes.Buffer
+	server := mcp.NewServer(strings.NewReader(input), &output, loader, "integration", log.New(io.Discard, "", 0))
+
+	if err := server.Serve(); err != nil {
+		t.Fatalf("Serve() returned error: %v", err)
+	}
+
+	responses := decodeMCPResponses(t, output.String())
+	if len(responses) != 4 {
+		t.Fatalf("expected 4 responses, got %d", len(responses))
+	}
+
+	if responses[1].Error != nil {
+		t.Fatalf("tools/list returned error: %+v", responses[1].Error)
+	}
+	tools, ok := responses[1].Result["tools"].([]any)
+	if !ok || len(tools) != 2 {
+		t.Fatalf("expected 2 tools, got %#v", responses[1].Result["tools"])
+	}
+
+	assertContentContains(t, responses[2].Result, "rust-lang")
+	assertContentContains(t, responses[3].Result, "Rust Design Principles")
+}
+
+func TestGlobalConfigDir(t *testing.T) {
 	// Save original HOME
 	originalHome := os.Getenv("HOME")
 	defer os.Setenv("HOME", originalHome)
 
 	// Test with HOME set
 	os.Setenv("HOME", "/home/testuser")
-	path, err := getGlobalConfigPath()
+	path, err := app.GlobalConfigDir()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -153,19 +194,19 @@ func TestGetGlobalConfigPath(t *testing.T) {
 
 	// Test with HOME unset
 	os.Unsetenv("HOME")
-	_, err = getGlobalConfigPath()
+	_, err = app.GlobalConfigDir()
 	if err == nil {
 		t.Error("expected error when HOME is not set")
 	}
 }
 
-func TestGetProjectPath(t *testing.T) {
+func TestProjectConfigDir(t *testing.T) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("failed to get cwd: %v", err)
 	}
 
-	path, err := getProjectPath()
+	path, err := app.ProjectConfigDir()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -210,5 +251,61 @@ func TestRunVersion(t *testing.T) {
 
 	if string(outputBytes) != "v1.2.3\n" {
 		t.Fatalf("expected version output 'v1.2.3', got %q", string(outputBytes))
+	}
+}
+
+type mcpResponse struct {
+	ID     any            `json:"id"`
+	Result map[string]any `json:"result"`
+	Error  *mcpError      `json:"error"`
+}
+
+type mcpError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+func decodeMCPResponses(t *testing.T, raw string) []mcpResponse {
+	t.Helper()
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+
+	lines := strings.Split(raw, "\n")
+	out := make([]mcpResponse, 0, len(lines))
+	for _, line := range lines {
+		var msg mcpResponse
+		if err := json.Unmarshal([]byte(line), &msg); err != nil {
+			t.Fatalf("failed to decode MCP response %q: %v", line, err)
+		}
+		if msg.Result == nil {
+			msg.Result = map[string]any{}
+		}
+		out = append(out, msg)
+	}
+	return out
+}
+
+func assertContentContains(t *testing.T, result map[string]any, expected string) {
+	t.Helper()
+	contentRaw, ok := result["content"]
+	if !ok {
+		t.Fatalf("result missing content field: %#v", result)
+	}
+
+	contentSlice, ok := contentRaw.([]any)
+	if !ok || len(contentSlice) == 0 {
+		t.Fatalf("content has unexpected shape: %#v", contentRaw)
+	}
+
+	firstEntry, ok := contentSlice[0].(map[string]any)
+	if !ok {
+		t.Fatalf("content entry has unexpected type: %#v", contentSlice[0])
+	}
+
+	text, _ := firstEntry["text"].(string)
+	if !strings.Contains(text, expected) {
+		t.Fatalf("expected content to contain %q, got %q", expected, text)
 	}
 }

@@ -3,12 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
-	"github.com/yourusername/howto/internal/config"
-	"github.com/yourusername/howto/internal/loader"
+	"github.com/yourusername/howto/internal/app"
 	"github.com/yourusername/howto/internal/output"
-	"github.com/yourusername/howto/internal/registry"
 )
 
 var version = "dev"
@@ -34,35 +31,21 @@ func run() error {
 	}
 
 	// Resolve paths
-	globalPath, err := getGlobalConfigPath()
+	globalPath, err := app.GlobalConfigDir()
 	if err != nil {
 		return fmt.Errorf("failed to get global config path: %w", err)
 	}
 
-	projectPath, err := getProjectPath()
+	projectPath, err := app.ProjectConfigDir()
 	if err != nil {
 		return fmt.Errorf("failed to get project path: %w", err)
 	}
 
-	// Load documents
-	globalDocs, err := loader.LoadGlobalDocs(globalPath)
-	if err != nil {
-		return fmt.Errorf("failed to load global docs: %w", err)
-	}
-
-	projectDocs, err := loader.LoadProjectDocs(projectPath)
-	if err != nil {
-		return fmt.Errorf("failed to load project docs: %w", err)
-	}
-
-	// Load project config
-	projectConfig, err := config.LoadProjectConfig(projectPath)
-	if err != nil {
-		return fmt.Errorf("failed to load project config: %w", err)
-	}
-
 	// Build registry
-	reg := registry.BuildRegistry(globalDocs, projectDocs, projectConfig)
+	reg, err := app.LoadRegistry(globalPath, projectPath)
+	if err != nil {
+		return err
+	}
 
 	if len(args) == 0 {
 		// No arguments - print help
@@ -77,27 +60,4 @@ func run() error {
 	}
 
 	return nil
-}
-
-// getGlobalConfigPath returns the global config directory path
-// Default: ~/.config/howto/
-func getGlobalConfigPath() (string, error) {
-	// Check for HOME environment variable
-	home := os.Getenv("HOME")
-	if home == "" {
-		return "", fmt.Errorf("HOME environment variable not set")
-	}
-
-	return filepath.Join(home, ".config", "howto"), nil
-}
-
-// getProjectPath returns the project-scoped config directory path
-// Default: $(pwd)/.howto/
-func getProjectPath() (string, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("failed to get current working directory: %w", err)
-	}
-
-	return filepath.Join(cwd, ".howto"), nil
 }

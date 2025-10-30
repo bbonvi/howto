@@ -25,6 +25,9 @@ cd howto
 go build ./...
 # or install into your GOPATH/bin:
 go install ./...
+
+# build the MCP server binary (optional)
+go build ./cmd/howto-mcp
 ```
 
 ## Agent Workflow
@@ -37,6 +40,22 @@ howto <playbook>
 ```
 
 `howto` exits with a non-zero status if configuration is missing, a document fails to parse, or the requested entry does not exist—surface these errors to the human operator so they can fix the library.
+
+## MCP Server
+`howto-mcp` exposes the same catalogue over the Model Context Protocol so LLM runtimes can talk to `howto` via JSON-RPC instead of shelling out. The server streams JSON-RPC 2.0 on stdin/stdout and supports:
+
+- `list_playbooks`: returns the available playbooks with descriptions and their origin (`global` vs `project`).
+- `get_playbook`: returns the Markdown content for the requested playbook, alongside metadata.
+
+The server watches the global and project libraries and reloads when files change, so updates are reflected without a restart.
+
+Run it directly (most MCP hosts spawn the binary and wire the pipes):
+```bash
+howto-mcp
+```
+
+Handshakes follow the standard MCP `initialize`/`initialized` flow and advertise the two tool definitions above.
+The server also returns usage guidance in the `initialize` response so hosts can brief agents on the required workflow (list the catalogue, fetch the playbooks you need, treat the Markdown as mandatory).
 
 ## Documentation Libraries
 

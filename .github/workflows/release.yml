@@ -46,21 +46,24 @@ jobs:
       - name: Build binaries
         if: steps.resolve_tag.outputs.skip != 'true'
         run: |
+          set -euo pipefail
           VERSION="${{ steps.resolve_tag.outputs.tag }}"
 
-          # macOS AMD64
-          GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=${VERSION}" -o howto-darwin-amd64 .
+          targets=(
+            "darwin amd64"
+            "darwin arm64"
+            "linux amd64"
+            "linux arm64"
+          )
 
-          # macOS ARM64
-          GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.version=${VERSION}" -o howto-darwin-arm64 .
+          for target in "${targets[@]}"; do
+            read -r os arch <<<"${target}"
 
-          # Linux AMD64
-          GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=${VERSION}" -o howto-linux-amd64 .
+            GOOS="${os}" GOARCH="${arch}" go build -ldflags "-X main.version=${VERSION}" -o "howto-${os}-${arch}" .
+            GOOS="${os}" GOARCH="${arch}" go build -ldflags "-X main.version=${VERSION}" -o "howto-mcp-${os}-${arch}" ./cmd/howto-mcp
+          done
 
-          # Linux ARM64
-          GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=${VERSION}" -o howto-linux-arm64 .
-
-          # Sanity check injected version
+          # Sanity check injected version for CLI binary
           BUILT_VERSION="$(./howto-linux-amd64 --version)"
           if [[ "${BUILT_VERSION}" != "${VERSION}" ]]; then
             echo "build version mismatch: expected ${VERSION}, got ${BUILT_VERSION}" >&2
@@ -83,6 +86,10 @@ jobs:
             howto-darwin-arm64
             howto-linux-amd64
             howto-linux-arm64
+            howto-mcp-darwin-amd64
+            howto-mcp-darwin-arm64
+            howto-mcp-linux-amd64
+            howto-mcp-linux-arm64
             checksums.txt
           draft: false
           prerelease: false
