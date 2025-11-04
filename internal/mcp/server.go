@@ -264,7 +264,7 @@ func (s *Server) executeListPlaybooks(id json.RawMessage) error {
 	} else {
 		builder.WriteString("Available playbooks:\n")
 		for _, doc := range docs {
-			builder.WriteString(fmt.Sprintf("- %s — %s (source: %s)\n", doc.Name, oneLine(doc.Description), doc.Source.String()))
+			builder.WriteString(fmt.Sprintf("- %s — %s\n", doc.Name, oneLine(doc.Description)))
 		}
 	}
 
