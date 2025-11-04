@@ -15,7 +15,7 @@ func TestPrintHelp_WithPlaybooks(t *testing.T) {
 		{Name: "rust-lang", Description: "Documentation for Rust projects", Required: true, Source: parser.SourceGlobal},
 	}
 	projectDocs := []parser.Document{
-		{Name: "commits", Description: "Commit guidelines", Source: parser.SourceProjectScoped},
+		{Name: "commits", Description: "Commit guidelines", Required: true, Source: parser.SourceProjectScoped},
 	}
 
 	reg := registry.BuildRegistry(globalDocs, projectDocs, &config.ProjectConfig{})
@@ -66,9 +66,9 @@ func TestPrintHelp_Empty(t *testing.T) {
 
 func TestPrintHelp_SortedByFilename(t *testing.T) {
 	docs := []parser.Document{
-		{Name: "gamma", Description: "G", Source: parser.SourceProjectScoped, FilePath: "2-bravo.md"},
-		{Name: "alpha", Description: "A", Source: parser.SourceProjectScoped, FilePath: "1-alpha.md"},
-		{Name: "beta", Description: "B", Source: parser.SourceProjectScoped, FilePath: "3-charlie.md"},
+		{Name: "gamma", Description: "G", Required: true, Source: parser.SourceProjectScoped, FilePath: "2-bravo.md"},
+		{Name: "alpha", Description: "A", Required: true, Source: parser.SourceProjectScoped, FilePath: "1-alpha.md"},
+		{Name: "beta", Description: "B", Required: true, Source: parser.SourceProjectScoped, FilePath: "3-charlie.md"},
 	}
 
 	reg := registry.BuildRegistry(nil, docs, &config.ProjectConfig{})
@@ -99,6 +99,7 @@ func TestPrintPlaybook_Success(t *testing.T) {
 			Name:        "test-doc",
 			Description: "Test",
 			Content:     "# Test Content\n\nThis is a test.",
+			Required:    true,
 			Source:      parser.SourceProjectScoped,
 		},
 	}
@@ -140,6 +141,7 @@ func TestPrintPlaybook_OnlyContent(t *testing.T) {
 			Name:        "doc",
 			Description: "This should not appear in output",
 			Content:     "Only this content should appear",
+			Required:    true,
 			Source:      parser.SourceProjectScoped,
 		},
 	}
@@ -203,7 +205,7 @@ func TestOneLineDescription(t *testing.T) {
 
 func TestPrintHelp_PlaybookListing(t *testing.T) {
 	docs := []parser.Document{
-		{Name: "test", Description: "Test description", Source: parser.SourceProjectScoped},
+		{Name: "test", Description: "Test description", Required: true, Source: parser.SourceProjectScoped},
 	}
 
 	reg := registry.BuildRegistry(nil, docs, &config.ProjectConfig{})

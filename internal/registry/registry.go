@@ -13,13 +13,12 @@ type Registry map[string]parser.Document
 
 // BuildRegistry creates a unified playbook registry with filtering logic
 // Rules:
-// 1. Always include all project-scoped docs
-// 2. For global docs:
+// 1. For both global and project-scoped docs:
 //   - Include if required=true (default)
 //   - Include if required=false AND name is in projectConfig.Require
 //   - Exclude if required=false AND name is NOT in projectConfig.Require
 //
-// 3. If name conflicts: project-scoped overrides global
+// 2. If name conflicts: project-scoped overrides global
 func BuildRegistry(globalDocs, projectDocs []parser.Document, projectConfig *config.ProjectConfig) Registry {
 	registry := make(Registry)
 
@@ -35,6 +34,10 @@ func BuildRegistry(globalDocs, projectDocs []parser.Document, projectConfig *con
 
 	// Then, add project-scoped docs (they override global docs with same name)
 	for _, doc := range projectDocs {
+		// Skip if required=false and not in project config require list
+		if !doc.Required && !projectConfig.HasRequire(doc.Name) {
+			continue
+		}
 		registry[doc.Name] = doc
 	}
 

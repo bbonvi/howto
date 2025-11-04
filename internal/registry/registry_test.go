@@ -9,8 +9,8 @@ import (
 
 func TestBuildRegistry_AllProjectDocs(t *testing.T) {
 	projectDocs := []parser.Document{
-		{Name: "commits", Description: "Commit rules", Source: parser.SourceProjectScoped},
-		{Name: "testing", Description: "Test rules", Source: parser.SourceProjectScoped},
+		{Name: "commits", Description: "Commit rules", Required: true, Source: parser.SourceProjectScoped},
+		{Name: "testing", Description: "Test rules", Required: true, Source: parser.SourceProjectScoped},
 	}
 
 	registry := BuildRegistry(nil, projectDocs, &config.ProjectConfig{})
@@ -117,7 +117,7 @@ func TestBuildRegistry_ProjectOverridesGlobal(t *testing.T) {
 	}
 
 	projectDocs := []parser.Document{
-		{Name: "commits", Description: "Project commit rules", Content: "Project content", Source: parser.SourceProjectScoped},
+		{Name: "commits", Description: "Project commit rules", Content: "Project content", Required: true, Source: parser.SourceProjectScoped},
 	}
 
 	registry := BuildRegistry(globalDocs, projectDocs, &config.ProjectConfig{})
@@ -147,8 +147,8 @@ func TestBuildRegistry_Combined(t *testing.T) {
 	}
 
 	projectDocs := []parser.Document{
-		{Name: "commits", Description: "Commits", Source: parser.SourceProjectScoped},
-		{Name: "testing", Description: "Testing", Source: parser.SourceProjectScoped},
+		{Name: "commits", Description: "Commits", Required: true, Source: parser.SourceProjectScoped},
+		{Name: "testing", Description: "Testing", Required: true, Source: parser.SourceProjectScoped},
 	}
 
 	registry := BuildRegistry(globalDocs, projectDocs, &config.ProjectConfig{})
@@ -172,7 +172,7 @@ func TestBuildRegistry_Combined(t *testing.T) {
 
 func TestRegistry_Get(t *testing.T) {
 	projectDocs := []parser.Document{
-		{Name: "test-doc", Description: "Test", Content: "Test content", Source: parser.SourceProjectScoped},
+		{Name: "test-doc", Description: "Test", Content: "Test content", Required: true, Source: parser.SourceProjectScoped},
 	}
 
 	registry := BuildRegistry(nil, projectDocs, &config.ProjectConfig{})
@@ -197,9 +197,9 @@ func TestRegistry_Get(t *testing.T) {
 
 func TestRegistry_List(t *testing.T) {
 	projectDocs := []parser.Document{
-		{Name: "zeta", Description: "Z", Source: parser.SourceProjectScoped, FilePath: "2-zeta.md"},
-		{Name: "alpha", Description: "A", Source: parser.SourceProjectScoped, FilePath: "1-alpha.md"},
-		{Name: "middle", Description: "M", Source: parser.SourceProjectScoped, FilePath: "3-middle.md"},
+		{Name: "zeta", Description: "Z", Required: true, Source: parser.SourceProjectScoped, FilePath: "2-zeta.md"},
+		{Name: "alpha", Description: "A", Required: true, Source: parser.SourceProjectScoped, FilePath: "1-alpha.md"},
+		{Name: "middle", Description: "M", Required: true, Source: parser.SourceProjectScoped, FilePath: "3-middle.md"},
 	}
 
 	registry := BuildRegistry(nil, projectDocs, &config.ProjectConfig{})
@@ -220,8 +220,8 @@ func TestRegistry_List(t *testing.T) {
 
 func TestRegistry_GetAll(t *testing.T) {
 	projectDocs := []parser.Document{
-		{Name: "zebra", Description: "Z", Source: parser.SourceProjectScoped, FilePath: "2-zebra.md"},
-		{Name: "alpha", Description: "A", Source: parser.SourceProjectScoped, FilePath: "1-alpha.md"},
+		{Name: "zebra", Description: "Z", Required: true, Source: parser.SourceProjectScoped, FilePath: "2-zebra.md"},
+		{Name: "alpha", Description: "A", Required: true, Source: parser.SourceProjectScoped, FilePath: "1-alpha.md"},
 	}
 
 	registry := BuildRegistry(nil, projectDocs, &config.ProjectConfig{})
@@ -243,7 +243,7 @@ func TestRegistry_GetAll(t *testing.T) {
 
 func TestRegistry_Has(t *testing.T) {
 	projectDocs := []parser.Document{
-		{Name: "exists", Description: "Exists", Source: parser.SourceProjectScoped},
+		{Name: "exists", Description: "Exists", Required: true, Source: parser.SourceProjectScoped},
 	}
 
 	registry := BuildRegistry(nil, projectDocs, &config.ProjectConfig{})
@@ -254,6 +254,76 @@ func TestRegistry_Has(t *testing.T) {
 
 	if registry.Has("does-not-exist") {
 		t.Error("did not expect 'does-not-exist' to be in registry")
+	}
+}
+
+func TestBuildRegistry_ProjectRequiredFalse_NotInConfig(t *testing.T) {
+	projectDocs := []parser.Document{
+		{Name: "optional-project", Description: "Optional project rule", Required: false, Source: parser.SourceProjectScoped},
+	}
+
+	registry := BuildRegistry(nil, projectDocs, &config.ProjectConfig{})
+
+	if registry.Count() != 0 {
+		t.Errorf("expected 0 docs (required=false, not in config), got %d", registry.Count())
+	}
+
+	if registry.Has("optional-project") {
+		t.Error("did not expect optional-project to be in registry")
+	}
+}
+
+func TestBuildRegistry_ProjectRequiredFalse_InConfig(t *testing.T) {
+	projectDocs := []parser.Document{
+		{Name: "optional-project", Description: "Optional project rule", Required: false, Source: parser.SourceProjectScoped},
+	}
+
+	projectConfig := &config.ProjectConfig{
+		Require: []string{"optional-project"},
+	}
+
+	registry := BuildRegistry(nil, projectDocs, projectConfig)
+
+	if registry.Count() != 1 {
+		t.Errorf("expected 1 doc (required=false but in config), got %d", registry.Count())
+	}
+
+	if !registry.Has("optional-project") {
+		t.Error("expected optional-project to be in registry")
+	}
+}
+
+func TestBuildRegistry_MixedProjectAndGlobalRequired(t *testing.T) {
+	globalDocs := []parser.Document{
+		{Name: "global-required", Description: "Global required", Required: true, Source: parser.SourceGlobal},
+		{Name: "global-optional", Description: "Global optional", Required: false, Source: parser.SourceGlobal},
+	}
+
+	projectDocs := []parser.Document{
+		{Name: "project-required", Description: "Project required", Required: true, Source: parser.SourceProjectScoped},
+		{Name: "project-optional", Description: "Project optional", Required: false, Source: parser.SourceProjectScoped},
+	}
+
+	projectConfig := &config.ProjectConfig{}
+
+	registry := BuildRegistry(globalDocs, projectDocs, projectConfig)
+
+	// Should only include docs with required=true
+	if registry.Count() != 2 {
+		t.Errorf("expected 2 docs (both required=true), got %d", registry.Count())
+	}
+
+	if !registry.Has("global-required") {
+		t.Error("expected global-required to be in registry")
+	}
+	if registry.Has("global-optional") {
+		t.Error("did not expect global-optional to be in registry")
+	}
+	if !registry.Has("project-required") {
+		t.Error("expected project-required to be in registry")
+	}
+	if registry.Has("project-optional") {
+		t.Error("did not expect project-optional to be in registry")
 	}
 }
 
@@ -276,8 +346,8 @@ func TestRegistry_Count(t *testing.T) {
 			name:       "only project docs",
 			globalDocs: nil,
 			projectDocs: []parser.Document{
-				{Name: "doc1", Description: "D1", Source: parser.SourceProjectScoped},
-				{Name: "doc2", Description: "D2", Source: parser.SourceProjectScoped},
+				{Name: "doc1", Description: "D1", Required: true, Source: parser.SourceProjectScoped},
+				{Name: "doc2", Description: "D2", Required: true, Source: parser.SourceProjectScoped},
 			},
 			projectConfig: &config.ProjectConfig{},
 			expectedCount: 2,
