@@ -16,6 +16,7 @@ var llmRules = []string{
 const mcpInstructions = "Use the howto MCP server before making changes:\n" +
 	"- Call `tools/list_playbooks` at the start of every task to refresh the catalogue.\n" +
 	"- Call `tools/call` with `list_playbooks` again whenever the repository or scope changes.\n" +
+	"- Avoid calling for the same playbook multiple times per chat.\n" +
 	"- Fetch each required playbook with `tools/call` (`get_playbook`, argument `name`) before acting.\n" +
 	"- Treat playbook Markdown as mandatory instructions; pause or escalate if guidance conflicts.\n" +
 	"- Surface errors (missing docs, parse failures) to the maintainer instead of guessing.\n" +
